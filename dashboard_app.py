@@ -287,16 +287,25 @@ def update_fig_layout(fig, title=None):
 # NÃO aplica tickprefix no eixo Y pois ele exibe nomes/categorias
 def plot_bar_h(df_in, cat_col, title, color='#C5A059', top_n=None):
     df_plot = df_in.groupby(cat_col)['VRTOTAL'].sum().reset_index()
-    df_plot = df_plot.sort_values('VRTOTAL', ascending=True)  # ascending=True → maior fica em cima
+    df_plot = df_plot.sort_values('VRTOTAL', ascending=True)
     if top_n:
         df_plot = df_plot.tail(top_n)
+    
+    # Criar rótulo curto para o eixo Y (evita quebrar o layout com nomes gigantes)
+    df_plot[f'{cat_col}_LABEL'] = df_plot[cat_col].apply(lambda x: (str(x)[:30] + '..') if len(str(x)) > 30 else x)
     df_plot['TEXTO'] = df_plot['VRTOTAL'].apply(format_brl)
 
-    fig = px.bar(df_plot, x='VRTOTAL', y=cat_col, orientation='h',
-                 color_discrete_sequence=[color], text='TEXTO')
+    fig = px.bar(df_plot, x='VRTOTAL', y=f'{cat_col}_LABEL', orientation='h',
+                 color_discrete_sequence=[color], text='TEXTO',
+                 hover_name=cat_col, # Mostra nome completo no hover
+                 hover_data={'VRTOTAL': True, f'{cat_col}_LABEL': False})
+    
     fig.update_traces(textposition='outside')
     fig = update_fig_layout(fig, title)
-    # Apenas o eixo X recebe prefixo de valor (é o eixo de valor numérico)
+    
+    # Ajustar margem esquerda dinamicamente para nomes longos
+    fig.update_layout(margin=dict(l=180))
+    
     max_val = df_plot['VRTOTAL'].max() if not df_plot.empty else 1
     fig.update_xaxes(tickprefix="R$ ", tickformat=",", range=[0, max_val * 1.3])
     return fig
