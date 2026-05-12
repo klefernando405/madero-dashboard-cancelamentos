@@ -332,6 +332,33 @@ def plot_donut(df_in, cat_col, title, limit=10):
     return fig
 
 
+# Gráfico de Mapa de Calor (Heatmap) para Densidade Temporal
+def plot_heatmap(df_in, title):
+    # Criar matriz Dia da Semana x Hora
+    dias_ordem = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
+    
+    # Pivotar os dados para o formato do heatmap
+    df_hm = df_in.groupby(['DIA_SEMANA', 'HORA_INT'])['VRTOTAL'].sum().reset_index()
+    df_hm = df_hm.pivot(index='HORA_INT', columns='DIA_SEMANA', values='VRTOTAL').fillna(0)
+    
+    # Reordenar colunas
+    cols = [d for d in dias_ordem if d in df_hm.columns]
+    df_hm = df_hm[cols]
+    
+    # Criar o gráfico
+    fig = px.imshow(df_hm, 
+                    labels=dict(x="Dia da Semana", y="Hora do Dia", color="Valor (R$)"),
+                    x=df_hm.columns,
+                    y=df_hm.index,
+                    color_continuous_scale='YlOrRd', # Amarelo -> Vermelho (Alerta)
+                    aspect="auto")
+    
+    fig = update_fig_layout(fig, title)
+    fig.update_layout(coloraxis_showscale=True)
+    fig.update_yaxes(autorange="reversed") # Hora 0 no topo
+    return fig
+
+
 # Gráfico de barras vertical (categoria no X, valor no Y)
 def plot_bar_v(df_in, cat_col, title, color='#1a1a1a', top_n=None):
     df_plot = df_in.groupby(cat_col)['VRTOTAL'].sum().reset_index()
@@ -596,9 +623,10 @@ else:
         st.markdown('</div>', unsafe_allow_html=True)
     with r2c2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        # Motivos de Cancelamento — Gráfico de Rosca (Donut)
+        # Motivos de Cancelamento — Gráfico de Barras (Top 10)
         if 'MOTIVO_LIMPO' in df.columns:
-            st.plotly_chart(plot_donut(df, 'MOTIVO_LIMPO', "Distribuição: Principais Motivos (Top 10)"), use_container_width=True)
+            df_mot = df.groupby('MOTIVO_LIMPO')['VRTOTAL'].sum().nlargest(10).reset_index()
+            st.plotly_chart(plot_bar_h(df_mot, 'MOTIVO_LIMPO', "Itens: Principais Motivos (Top 10)", color='#1E3A5F'), use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     r3c1, r3c2 = st.columns(2)
@@ -648,28 +676,7 @@ else:
         st.markdown('</div>', unsafe_allow_html=True)
     with r4c2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        # Dia da Semana — TREEMAP (Mapa de Árvore)
-        ordem_dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
-        df_dia = df.groupby('DIA_SEMANA')['VRTOTAL'].sum().reindex(ordem_dias).reset_index().fillna(0)
-        df_dia['TEXTO'] = df_dia['VRTOTAL'].apply(format_brl)
-        fig_tree = px.treemap(
-            df_dia, path=['DIA_SEMANA'], values='VRTOTAL',
-            color='VRTOTAL',
-            color_continuous_scale=['#f0f2f6', '#C5A059', '#1a1a1a'],
-            custom_data=['TEXTO']
-        )
-        fig_tree.update_traces(
-            texttemplate='<b>%{label}</b><br>%{customdata[0]}',
-            textfont=dict(size=14)
-        )
-        fig_tree.update_layout(
-            title=dict(text='<b>Itens: Por Dia da Semana (Treemap)</b>', font=dict(color='#000000', size=15)),
-            font=dict(family='Inter', color='#000000'),
-            paper_bgcolor='white',
-            margin=dict(l=10, r=10, t=50, b=10),
-            coloraxis_showscale=False
-        )
-        st.plotly_chart(fig_tree, use_container_width=True)
+        st.plotly_chart(plot_heatmap(df, "Itens: Densidade Dia x Hora"), use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================================
