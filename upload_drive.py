@@ -139,7 +139,7 @@ def upload_csv(service, df, nome_arquivo, pasta_id):
         metadata = {"name": nome_arquivo, "parents": [pasta_id]}
         service.files().create(body=metadata, media_body=media, fields="id").execute()
         log.info(f"  CRIADO: {nome_arquivo}")
-    print(f"  ✓ {nome_arquivo} enviado para o Drive.")
+    print(f"  OK {nome_arquivo} enviado para o Drive.")
 
 
 def upload_excel(service, caminho_local, nome_arquivo, pasta_id):
@@ -160,7 +160,7 @@ def upload_excel(service, caminho_local, nome_arquivo, pasta_id):
         metadata = {"name": nome_arquivo, "parents": [pasta_id]}
         service.files().create(body=metadata, media_body=media, fields="id").execute()
     log.info(f"  UPLOAD OK: {nome_arquivo}")
-    print(f"  ✓ {nome_arquivo} enviado para o Drive.")
+    print(f"  OK {nome_arquivo} enviado para o Drive.")
 
 
 def baixar_csv_drive(service, nome_arquivo, pasta_id):
@@ -215,12 +215,11 @@ def processar_e_acumular(service, csv_origem, nome_drive, pasta_id):
             mask = historico_dates.isin(datas_novas)
             df_historico_filtrado = df_historico[~mask]
             
-            # Concatena e aplica drop_duplicates final por precaução
+            # Concatena e aplica o acumulado (Removido drop_duplicates para não perder itens legítimos)
             df_final = pd.concat([df_historico_filtrado, df_novo_limpo], ignore_index=True)
-            df_final = df_final.drop_duplicates()
             log.info(f"  Upsert aplicado. Datas substituídas: {len(datas_novas)}")
         else:
-            df_final = pd.concat([df_historico, df_novo_limpo], ignore_index=True).drop_duplicates()
+            df_final = pd.concat([df_historico, df_novo_limpo], ignore_index=True)
             log.info(f"  Concatenação simples (Coluna DATA_C não encontrada).")
     else:
         df_final = df_novo_limpo  # Primeiro upload: envia tudo
@@ -241,7 +240,7 @@ def run():
     try:
         print("\nConectando ao Google Drive...")
         service = conectar_drive()
-        print("✓ Conectado ao Google Drive!")
+        print("OK Conectado ao Google Drive!")
         log.info("Conexao com Google Drive: OK")
     except FileNotFoundError as e:
         print(f"\nERRO: {e}")
@@ -263,7 +262,7 @@ def run():
     for arq in CONFIGURACOES["ARQUIVOS_EXCEL"]:
         upload_excel(service, arq["origem"], arq["nome_drive"], pasta_id)
 
-    print("\n✓ UPLOAD CONCLUÍDO COM SUCESSO!")
+    print("\nOK UPLOAD CONCLUIDO COM SUCESSO!")
     print(f"  Log salvo em: {LOG_PATH}")
     log.info("UPLOAD CONCLUIDO COM SUCESSO!")
 

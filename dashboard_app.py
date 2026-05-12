@@ -234,14 +234,14 @@ def load_data(tipo):
             elif 'DIRETOR' in c and 'DIRETOR' not in col_map.values(): col_map[col] = 'DIRETOR'
             elif 'GEOP' in c and 'GEOP' not in col_map.values(): col_map[col] = 'GEOP'
             elif 'GERENTE' in c and 'REGIONAL' in c and 'GERENTE_REGIONAL' not in col_map.values(): col_map[col] = 'GERENTE_REGIONAL'
-        df_reg = df_reg.rename(columns=col_map)[[v for v in col_map.values()]]
+        df_reg = df_reg.rename(columns=col_map)[[v for v in col_map.values()]].drop_duplicates(subset=['CDFILIAL_C'])
         df_reg['CDFILIAL_C'] = df_reg['CDFILIAL_C'].astype(str).str.replace('.0','',regex=False).str.strip().str.lstrip('0')
         df['CDFILIAL_C'] = df['CDFILIAL_C'].astype(str).str.replace('.0','',regex=False).str.strip().str.lstrip('0')
         df = df.merge(df_reg, on='CDFILIAL_C', how='left')
 
     # Conversões
     df['DATA_C']  = pd.to_datetime(df['DATA_C'], format='%d/%m/%Y', errors='coerce')
-    df['VRTOTAL'] = pd.to_numeric(df['VRTOTAL'], errors='coerce').fillna(0)
+    df['VRTOTAL'] = pd.to_numeric(df['VRTOTAL'].astype(str).str.replace('.', '', regex=False).str.replace(',', '.', regex=False), errors='coerce').fillna(0)
     df['HORA_INT'] = pd.to_numeric(df['HORA_C'].astype(str).str[:2], errors='coerce').fillna(0).astype(int)
     df['DIA_SEMANA'] = df['DATA_C'].dt.day_name().map({
         'Monday': 'Segunda', 'Tuesday': 'Terça', 'Wednesday': 'Quarta',
