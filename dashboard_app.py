@@ -311,6 +311,27 @@ def plot_bar_h(df_in, cat_col, title, color='#C5A059', top_n=None):
     return fig
 
 
+# Gráfico de Rosca (Donut) para proporções
+def plot_donut(df_in, cat_col, title, limit=10):
+    df_plot = df_in.groupby(cat_col)['VRTOTAL'].sum().nlargest(limit).reset_index()
+    
+    # Paleta premium (Madero + Tons sóbrios)
+    colors = ['#C5A059', '#1E3A5F', '#1a1a1a', '#4a4a4a', '#8c764b', '#2c4c7c', '#666666']
+    
+    fig = px.pie(df_plot, values='VRTOTAL', names=cat_col, hole=0.5,
+                 color_discrete_sequence=colors)
+    
+    fig.update_traces(
+        textposition='inside', 
+        textinfo='percent+label',
+        marker=dict(line=dict(color='#FFFFFF', width=2))
+    )
+    
+    fig = update_fig_layout(fig, title)
+    fig.update_layout(showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5))
+    return fig
+
+
 # Gráfico de barras vertical (categoria no X, valor no Y)
 def plot_bar_v(df_in, cat_col, title, color='#1a1a1a', top_n=None):
     df_plot = df_in.groupby(cat_col)['VRTOTAL'].sum().reset_index()
@@ -575,10 +596,9 @@ else:
         st.markdown('</div>', unsafe_allow_html=True)
     with r2c2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        # Motivos de Cancelamento — Gráfico de Barras (Top 10)
+        # Motivos de Cancelamento — Gráfico de Rosca (Donut)
         if 'MOTIVO_LIMPO' in df.columns:
-            df_mot = df.groupby('MOTIVO_LIMPO')['VRTOTAL'].sum().nlargest(10).reset_index()
-            st.plotly_chart(plot_bar_h(df_mot, 'MOTIVO_LIMPO', "Itens: Principais Motivos (Top 10)", color='#1E3A5F'), use_container_width=True)
+            st.plotly_chart(plot_donut(df, 'MOTIVO_LIMPO', "Distribuição: Principais Motivos (Top 10)"), use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     r3c1, r3c2 = st.columns(2)
